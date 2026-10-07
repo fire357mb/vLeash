@@ -1,0 +1,22 @@
+name: Build collar
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Build
+        run: |
+          mkdir leash_collar && cp leash_collar.ino leash_collar/
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+          arduino-cli compile --fqbn esp32:esp32:XIAO_ESP32C6 --output-dir build leash_collar
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create build-${{ github.run_number }} build/leash_collar.ino.merged.bin --title "Collar build ${{ github.run_number }}"
